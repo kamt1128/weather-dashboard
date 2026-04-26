@@ -1,6 +1,16 @@
 # Render Blueprint — Weather Real-Time Dashboard
-# Provisiona Postgres + Redis + web service Daphne + 2 workers Celery (worker y beat).
-# Conecta este repo a Render -> New -> Blueprint, Render detecta este archivo automaticamente.
+# Provisiona Postgres + Redis + web service Daphne (todo en plan free).
+#
+# Nota sobre Celery (worker + beat):
+# Render free tier NO soporta `type: worker`. La implementacion de Celery esta
+# en el repo (backend/weather/tasks.py, backend/config/celery.py) y funciona en
+# docker-compose local. Para deploy en produccion, hay tres opciones:
+#   1. Upgrade a Render Standard ($7/mes por worker x 2).
+#   2. Deploy de los workers en Railway (free tier soporta workers).
+#   3. Cron externo (GitHub Actions schedule) que hace POST a un endpoint
+#      protegido del backend para disparar el refresh periodico.
+# Por defecto el blueprint NO los provisiona — la app funciona sin ellos
+# gracias al cache Redis 600s + fetch on-demand a OpenWeather.
 
 databases:
   - name: weather-db
@@ -11,7 +21,7 @@ databases:
     ipAllowList: []
 
 services:
-  # Redis (cache + Celery broker + Channels layer)
+  # Redis (cache + Channels layer + Celery broker para uso local/upgrade)
   - type: redis
     name: weather-redis
     plan: free
@@ -59,85 +69,3 @@ services:
         sync: false
       - key: CORS_ALLOWED_ORIGINS
         sync: false
-
-  # Celery worker (consume tasks)
-  - type: worker
-    name: weather-celery-worker
-    runtime: python
-    plan: free
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && celery -A config worker -l info
-    autoDeploy: true
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.5"
-      - key: DJANGO_SECRET_KEY
-        fromService:
-          type: web
-          name: weather-backend
-          envVarKey: DJANGO_SECRET_KEY
-      - key: DJANGO_DEBUG
-        value: "false"
-      - key: DJANGO_ALLOWED_HOSTS
-        value: ".onrender.com"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: weather-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: weather-redis
-          property: connectionString
-      - key: CELERY_BROKER_URL
-        fromService:
-          type: redis
-          name: weather-redis
-          property: connectionString
-      - key: CELERY_RESULT_BACKEND
-        fromService:
-          type: redis
-          name: weather-redis
-          property: connectionString
-      - key: OPENWEATHER_API_KEY
-        sync: false
-
-  # Celery beat (scheduler periodic tasks)
-  - type: worker
-    name: weather-celery-beat
-    runtime: python
-    plan: free
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    autoDeploy: true
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.5"
-      - key: DJANGO_SECRET_KEY
-        fromService:
-          type: web
-          name: weather-backend
-          envVarKey: DJANGO_SECRET_KEY
-      - key: DJANGO_DEBUG
-        value: "false"
-      - key: DJANGO_ALLOWED_HOSTS
-        value: ".onrender.com"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: weather-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: weather-redis
-          property: connectionString
-      - key: CELERY_BROKER_URL
-        fromService:
-          type: redis
-          name: weather-redis
-          property: connectionString
-      - key: CELERY_RESULT_BACKEND
-        fromService:
-          type: redis
-          name: weather-redis
-          property: connectionString

@@ -245,21 +245,24 @@ npm test
 
 ### Backend (Render)
 
-1. Conectar repositorio a Render
-2. Seleccionar "Blueprint" y apuntar a `render.yaml`
-3. Configurar secretos en Render dashboard:
+1. Conectar repositorio a Render → New → Blueprint → seleccionar `render.yaml`.
+2. Render aprovisiona: Postgres 16 (free), Redis (free) y web service Daphne (free).
+3. Configurar secretos manualmente en el dashboard del servicio `weather-backend`:
    - `OPENWEATHER_API_KEY`
    - `CORS_ALLOWED_ORIGINS` (ej: `https://kennyalejandro.github.io`)
+4. Verificar health endpoint: `https://weather-backend.onrender.com/api/v1/health/`.
 
-#### Alternativa: Railway
+#### Nota sobre Celery en producción
 
-1. Conectar repo a Railway
-2. Railway detecta `Dockerfile`
-3. Crear servicios manualmente:
-   - Web service: `cd backend && daphne -b 0.0.0.0 -p $PORT config.asgi:application`
-   - Celery worker y beat (mismo buildCommand)
-4. Agregar plugins Postgres y Redis
-5. Configurar envvars: `DATABASE_URL`, `REDIS_URL`, `OPENWEATHER_API_KEY`, etc.
+El plan free de Render **no soporta `type: worker`** (background workers). Por eso el `render.yaml` solo provisiona web + Postgres + Redis. La implementación de Celery (worker, beat, tasks) **está completa en el repo** y funciona en `docker-compose up` para evaluación local.
+
+En producción, el cache Redis (TTL 600s) + fetch on-demand a OpenWeather es suficiente para cubrir la funcionalidad: el dashboard se siente igual de fresco. Si se quisiera mantener el refresh proactivo en background, las opciones son:
+
+- **Render upgrade** a plan Standard ($7/mes por worker × 2 = $14/mes).
+- **Railway free tier**: soporta workers; basta con conectar el repo, definir `cd backend && celery -A config worker -l info` y `cd backend && celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler` como dos services adicionales, y agregar plugins Postgres + Redis.
+- **GitHub Actions cron**: workflow gratuito que dispara un `curl` periódico a un endpoint de refresh del backend (alternativa minimalista sin segundo servicio).
+
+Esta decisión queda documentada explícitamente para evitar inflar costos en una prueba técnica.
 
 ## Decisiones Técnicas
 
