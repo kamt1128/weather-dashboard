@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List
 
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import StreamingHttpResponse
@@ -206,7 +206,7 @@ class WeatherDataViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
 
-@action(detail=False, methods=['get'])
+@api_view(['GET'])
 def health(request):
     """
     Health check endpoint.
