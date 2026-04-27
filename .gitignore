@@ -55,6 +55,8 @@ build/
 
 # Vite
 .vite/
+vite.config.ts.timestamp-*.mjs
+vite.config.js.timestamp-*.mjs
 
 # IDE
 .idea/
