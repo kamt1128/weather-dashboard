@@ -5,8 +5,7 @@
 import { Card, Row, Col, Statistic } from 'antd'
 import {
   CloudOutlined,
-  DropletOutlined,
-  WindOutlined,
+  ThunderboltOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons'
 import { WeatherData } from '@/types/weather'
@@ -45,8 +44,7 @@ export const CityCard: React.FC<CityCardProps> = ({ city, data, highlight }) => 
         <Col xs={24} sm={12}>
           <Statistic
             title="Temperatura"
-            value={data.temperature}
-            suffix="°C"
+            value={formatTemperature(data.temperature)}
             prefix={<CloudOutlined />}
             valueStyle={{ fontSize: 28, fontWeight: 600 }}
           />
@@ -54,18 +52,16 @@ export const CityCard: React.FC<CityCardProps> = ({ city, data, highlight }) => 
         <Col xs={24} sm={12}>
           <Statistic
             title="Humedad"
-            value={data.humidity}
-            suffix="%"
-            prefix={<DropletOutlined />}
+            value={formatHumidity(data.humidity)}
+            prefix={<CloudOutlined />}
             valueStyle={{ fontSize: 28, fontWeight: 600 }}
           />
         </Col>
         <Col xs={24} sm={12}>
           <Statistic
             title="Viento"
-            value={data.wind_speed}
-            suffix="m/s"
-            prefix={<WindOutlined />}
+            value={formatWind(data.wind_speed)}
+            prefix={<ThunderboltOutlined />}
             valueStyle={{ fontSize: 20 }}
           />
         </Col>

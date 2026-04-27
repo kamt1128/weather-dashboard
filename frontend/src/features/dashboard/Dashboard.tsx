@@ -2,7 +2,7 @@
  * Dashboard feature component
  */
 
-import { Row, Col, Card, Input, Button, Space, List, Empty } from 'antd'
+import { Row, Col, Card, Input, Button, List, Empty } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useWeatherStore } from '@/store/weatherStore'
@@ -91,7 +91,6 @@ export const Dashboard: React.FC = () => {
                       style={{
                         padding: '8px 4px',
                         cursor: 'pointer',
-                        '&:hover': { background: '#f0f0f0' },
                       }}
                       onMouseEnter={(e) =>
                         (e.currentTarget.style.background = '#e6f7ff')

@@ -10,10 +10,9 @@ export class WebSocketManager {
   private ws: WebSocket | null = null
   private url: string
   private reconnectAttempts = 0
-  private reconnectDelay = 1000
   private maxReconnectDelay = 30000
-  private pingInterval: NodeJS.Timeout | null = null
-  private pongTimeout: NodeJS.Timeout | null = null
+  private pingInterval: ReturnType<typeof setTimeout> | null = null
+  private pongTimeout: ReturnType<typeof setTimeout> | null = null
   private listeners: Record<string, EventCallback[]> = {}
   private subscribedCities: string[] = []
 
