@@ -31,16 +31,56 @@ apiClient.interceptors.response.use(
   }
 )
 
+interface WeatherListResponse
+  extends PaginatedResponse<WeatherData> {
+  page: number
+  page_size: number
+}
+
+type WeatherListRawResponse =
+  | WeatherData[]
+  | (Partial<WeatherListResponse> & {
+      results?: WeatherData[]
+    })
+
+function normalizeWeatherListResponse(
+  raw: WeatherListRawResponse,
+  params: { page?: number; page_size?: number }
+): WeatherListResponse {
+  if (Array.isArray(raw)) {
+    const fallbackPageSize = params.page_size ?? 20
+    return {
+      page: params.page ?? 1,
+      page_size: fallbackPageSize,
+      count: raw.length,
+      next: null,
+      previous: null,
+      results: raw,
+    }
+  }
+
+  const results = Array.isArray(raw.results) ? raw.results : []
+  return {
+    page: typeof raw.page === 'number' ? raw.page : params.page ?? 1,
+    page_size:
+      typeof raw.page_size === 'number' ? raw.page_size : params.page_size ?? 20,
+    count: typeof raw.count === 'number' ? raw.count : results.length,
+    next: raw.next ?? null,
+    previous: raw.previous ?? null,
+    results,
+  }
+}
+
 export async function fetchWeatherList(params: {
   page?: number
   page_size?: number
   city?: string
   search?: string
-}): Promise<PaginatedResponse<WeatherData>> {
-  const response = await apiClient.get<PaginatedResponse<WeatherData>>('/weather/', {
+}): Promise<WeatherListResponse> {
+  const response = await apiClient.get<WeatherListRawResponse>('/weather/', {
     params,
   })
-  return response.data
+  return normalizeWeatherListResponse(response.data, params)
 }
 
 export async function fetchDashboard(city1: string, city2: string): Promise<DashboardData> {

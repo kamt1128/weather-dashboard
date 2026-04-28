@@ -18,6 +18,7 @@ from rest_framework.filters import SearchFilter
 
 from weather.models import WeatherData
 from weather.serializers import WeatherDataSerializer, CitySearchSerializer, DashboardDataSerializer
+from weather.pagination import WeatherPageNumberPagination
 from weather.services import get_or_fetch_weather
 from common.exceptions import OpenWeatherUnavailable
 
@@ -41,7 +42,7 @@ class WeatherDataViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['city']
     filter_backends = [DjangoFilterBackend, SearchFilter]
     search_fields = ['city']
-    pagination_class = None  # Usa la configurada en settings (PageNumberPagination, page_size=20)
+    pagination_class = WeatherPageNumberPagination
 
     @action(detail=False, methods=['get'], url_path='dashboard-data')
     def dashboard_data(self, request):

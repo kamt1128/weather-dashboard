@@ -26,6 +26,22 @@ export const Dashboard: React.FC = () => {
   const { city1, city2, setCity1, setCity2, liveUpdates } = useWeatherStore()
   const { data, loading, error } = useDashboard(city1, city2)
 
+  const getNextCities = () => ({
+    nextCity1: city1Search.trim() || city1,
+    nextCity2: city2Search.trim() || city2,
+  })
+
+  const handleCompare = () => {
+    const { nextCity1, nextCity2 } = getNextCities()
+
+    setCity1(nextCity1)
+    setCity2(nextCity2)
+    setCity1Search('')
+    setCity2Search('')
+    setShowCity1Suggestions(false)
+    setShowCity2Suggestions(false)
+  }
+
   const handleSelectCity1 = (c: string) => {
     setCity1(c)
     setCity1Search('')
@@ -50,6 +66,13 @@ export const Dashboard: React.FC = () => {
       )
     : POPULAR_CITIES
 
+  const { nextCity1, nextCity2 } = getNextCities()
+  const compareDisabled =
+    !nextCity1 ||
+    !nextCity2 ||
+    (nextCity1.toLowerCase() === city1.toLowerCase() &&
+      nextCity2.toLowerCase() === city2.toLowerCase())
+
   return (
     <div style={{ width: '100%' }}>
       {error && (
@@ -70,6 +93,7 @@ export const Dashboard: React.FC = () => {
                   setCity1Search(e.target.value)
                   setShowCity1Suggestions(true)
                 }}
+                onPressEnter={handleCompare}
                 onFocus={() => setShowCity1Suggestions(true)}
                 prefix={<SearchOutlined />}
               />
@@ -107,7 +131,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </Col>
           <Col xs={24} sm={2} style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <Button type="primary" block>
+            <Button type="primary" block onClick={handleCompare} disabled={compareDisabled}>
               Comparar
             </Button>
           </Col>
@@ -121,6 +145,7 @@ export const Dashboard: React.FC = () => {
                   setCity2Search(e.target.value)
                   setShowCity2Suggestions(true)
                 }}
+                onPressEnter={handleCompare}
                 onFocus={() => setShowCity2Suggestions(true)}
                 prefix={<SearchOutlined />}
               />

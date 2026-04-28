@@ -33,6 +33,7 @@ export function getWeatherIcon(temp: number, humidity: number): string {
   if (temp > 25) return '☀️'
   if (temp > 15) return '🌤️'
   if (temp > 5) return '☁️'
+  if (temp <= 0) return '❄️'
   if (humidity > 70) return '🌧️'
-  return '❄️'
+  return '☁️'
 }

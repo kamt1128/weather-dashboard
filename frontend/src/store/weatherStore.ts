@@ -14,6 +14,7 @@ interface WeatherStore {
   setDashboard: (d: DashboardData | null) => void
   liveUpdates: WeatherData[]
   pushLiveUpdate: (w: WeatherData) => void
+  applyRealtimeUpdate: (w: WeatherData) => void
   loading: boolean
   setLoading: (b: boolean) => void
   error: string | null
@@ -32,6 +33,46 @@ export const useWeatherStore = create<WeatherStore>((set) => ({
     set((state) => ({
       liveUpdates: [w, ...state.liveUpdates].slice(0, 50),
     })),
+  applyRealtimeUpdate: (w) =>
+    set((state) => {
+      if (!state.dashboard) {
+        return {}
+      }
+
+      const normalize = (value: string) => value.trim().toLowerCase()
+      const sameCity = (a: string, b: string) => normalize(a) === normalize(b)
+      const updateHistory = (history: WeatherData[]) =>
+        [w, ...history.filter((item) => item.id !== w.id)].slice(0, 24)
+
+      const city1Matches =
+        sameCity(w.city, state.dashboard.city1.name) || sameCity(w.city, state.city1)
+      const city2Matches =
+        sameCity(w.city, state.dashboard.city2.name) || sameCity(w.city, state.city2)
+
+      if (!city1Matches && !city2Matches) {
+        return {}
+      }
+
+      return {
+        dashboard: {
+          ...state.dashboard,
+          city1: city1Matches
+            ? {
+                ...state.dashboard.city1,
+                latest: w,
+                history: updateHistory(state.dashboard.city1.history),
+              }
+            : state.dashboard.city1,
+          city2: city2Matches
+            ? {
+                ...state.dashboard.city2,
+                latest: w,
+                history: updateHistory(state.dashboard.city2.history),
+              }
+            : state.dashboard.city2,
+        },
+      }
+    }),
   loading: false,
   setLoading: (b) => set({ loading: b }),
   error: null,

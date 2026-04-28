@@ -3,11 +3,24 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import axios from 'axios'
 import { fetchWeatherList, exportCsvUrl } from '@/services/api'
 
+const mockGet = vi.hoisted(() => vi.fn())
+const mockResponseInterceptorUse = vi.hoisted(() => vi.fn())
+
 // Mock axios
-vi.mock('axios')
+vi.mock('axios', () => ({
+  default: {
+    create: vi.fn(() => ({
+      get: mockGet,
+      interceptors: {
+        response: {
+          use: mockResponseInterceptorUse,
+        },
+      },
+    })),
+  },
+}))
 
 describe('API Service', () => {
   beforeEach(() => {
@@ -31,9 +44,7 @@ describe('API Service', () => {
       ],
     }
 
-    vi.mocked(axios.create).mockReturnValue({
-      get: vi.fn().mockResolvedValue({ data: mockData }),
-    } as any)
+    mockGet.mockResolvedValueOnce({ data: mockData })
 
     // Test case would verify the API call
     expect(fetchWeatherList).toBeDefined()

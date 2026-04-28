@@ -12,13 +12,13 @@ import { formatDatetime, formatTemperature, formatHumidity, formatWind } from '@
 import { WeatherData } from '@/types/weather'
 
 export const WeatherTable: React.FC = () => {
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const [requestedPage, setRequestedPage] = useState(1)
+  const [requestedPageSize, setRequestedPageSize] = useState(20)
   const [cityFilter, setCityFilter] = useState<string>('')
 
-  const { data, total, loading } = useWeatherList({
-    page,
-    page_size: pageSize,
+  const { data, total, page, pageSize, loading } = useWeatherList({
+    page: requestedPage,
+    page_size: requestedPageSize,
     city: cityFilter || undefined,
   })
 
@@ -72,7 +72,7 @@ export const WeatherTable: React.FC = () => {
           value={cityFilter}
           onChange={(e) => {
             setCityFilter(e.target.value)
-            setPage(1)
+            setRequestedPage(1)
           }}
           style={{ width: 250 }}
         />
@@ -102,8 +102,8 @@ export const WeatherTable: React.FC = () => {
           pageSize,
           total,
           onChange: (p, ps) => {
-            setPage(p)
-            setPageSize(ps)
+            setRequestedPage(p)
+            setRequestedPageSize(ps)
           },
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50', '100'],

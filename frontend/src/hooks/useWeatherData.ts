@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchDashboard, fetchWeatherList } from '@/services/api'
-import { getCachedDashboard, cacheDashboard, getCachedWeather, cacheWeatherList } from '@/services/storage'
+import { getCachedDashboard, cacheDashboard, getCachedWeather, cacheWeatherList, enqueuePendingSync } from '@/services/storage'
 import { useWeatherStore } from '@/store/weatherStore'
 import { useUIStore } from '@/store/uiStore'
 import { DashboardData, WeatherData } from '@/types/weather'
@@ -51,6 +51,13 @@ export function useDashboard(city1: string, city2: string): UseDashboardReturn {
       if (cached) {
         setDashboard(cached)
         setError(null)
+      } else {
+        // If no cache and fetch failed (likely offline), enqueue for retry
+        await enqueuePendingSync({
+          action: 'fetch_dashboard',
+          payload: { city1, city2 }
+        })
+        setError(`${message}. Se reintentará cuando recuperes conexión.`)
       }
     } finally {
       setLoading(false)
@@ -75,6 +82,8 @@ interface UseWeatherListParams {
 interface UseWeatherListReturn {
   data: WeatherData[]
   total: number
+  page: number
+  pageSize: number
   loading: boolean
   error: string | null
 }
@@ -82,6 +91,8 @@ interface UseWeatherListReturn {
 export function useWeatherList(params: UseWeatherListParams): UseWeatherListReturn {
   const [data, setData] = useState<WeatherData[]>([])
   const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(params.page ?? 1)
+  const [pageSize, setPageSize] = useState(params.page_size ?? 20)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { isOnline } = useUIStore()
@@ -95,11 +106,15 @@ export function useWeatherList(params: UseWeatherListParams): UseWeatherListRetu
           const response = await fetchWeatherList(params)
           setData(response.results)
           setTotal(response.count)
+          setPage(response.page)
+          setPageSize(response.page_size)
           await cacheWeatherList(response.results)
         } else {
           const cached = await getCachedWeather(params.city)
           setData(cached)
           setTotal(cached.length)
+          setPage(params.page ?? 1)
+          setPageSize(params.page_size ?? 20)
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error al cargar datos'
@@ -107,6 +122,8 @@ export function useWeatherList(params: UseWeatherListParams): UseWeatherListRetu
         const cached = await getCachedWeather(params.city)
         setData(cached)
         setTotal(cached.length)
+        setPage(params.page ?? 1)
+        setPageSize(params.page_size ?? 20)
       } finally {
         setLoading(false)
       }
@@ -115,5 +132,5 @@ export function useWeatherList(params: UseWeatherListParams): UseWeatherListRetu
     fetchData()
   }, [params.page, params.page_size, params.city, isOnline])
 
-  return { data, total, loading, error }
+  return { data, total, page, pageSize, loading, error }
 }

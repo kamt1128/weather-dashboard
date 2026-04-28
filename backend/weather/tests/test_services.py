@@ -2,17 +2,24 @@
 Tests para services de weather app.
 """
 
-import json
 import pytest
-from unittest.mock import patch, MagicMock
-from django.core.cache import cache
-from requests.exceptions import Timeout, ConnectionError
+from unittest.mock import MagicMock, patch
 
-from weather.services import OpenWeatherService, get_or_fetch_weather
-from weather.models import WeatherData
+from django.core.cache import cache
+from requests.exceptions import ConnectionError, Timeout
+
 from common.exceptions import OpenWeatherUnavailable
+from weather.models import WeatherData
+from weather.services import OpenWeatherService, get_or_fetch_weather
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def test_runtime_settings(settings):
+    """Configura API key de prueba y limpia cache para aislamiento."""
+    settings.OPENWEATHER_API_KEY = 'test-api-key'
+    cache.clear()
 
 
 class TestOpenWeatherService:
@@ -24,7 +31,7 @@ class TestOpenWeatherService:
         mock_response = MagicMock()
         mock_response.json.return_value = {
             'main': {'temp': 22.5, 'humidity': 65},
-            'wind': {'speed': 12.3}
+            'wind': {'speed': 12.3},
         }
         mock_get.return_value = mock_response
 
@@ -38,13 +45,11 @@ class TestOpenWeatherService:
     @patch('weather.services.requests.Session.get')
     def test_fetch_current_timeout_retry(self, mock_get):
         """Verifica reintentos en caso de Timeout."""
-        # Primer intento: Timeout, segundo: exitoso
         mock_response = MagicMock()
         mock_response.json.return_value = {
             'main': {'temp': 20.0, 'humidity': 70},
-            'wind': {'speed': 5.0}
+            'wind': {'speed': 5.0},
         }
-
         mock_get.side_effect = [Timeout(), mock_response]
 
         result = OpenWeatherService.fetch_current('Barcelona')
@@ -66,7 +71,6 @@ class TestOpenWeatherService:
         mock_response = MagicMock()
         mock_response.status_code = 404
         mock_response.raise_for_status.side_effect = Exception("404 Not Found")
-
         mock_get.return_value = mock_response
 
         with pytest.raises(OpenWeatherUnavailable):
@@ -90,9 +94,9 @@ class TestGetOrFetchWeather:
             city='Madrid',
             temperature=22.5,
             humidity=65.0,
-            wind_speed=12.3
+            wind_speed=12.3,
         )
-        cache_key = f"weather:madrid"
+        cache_key = "weather:madrid"
         cache.set(cache_key, weather, 600)
 
         result = get_or_fetch_weather('Madrid')
@@ -109,10 +113,8 @@ class TestGetOrFetchWeather:
             'temperature': 22.5,
             'humidity': 65.0,
             'wind_speed': 12.3,
-            'timestamp': '2026-04-24T10:00:00'
+            'timestamp': '2026-04-24T10:00:00',
         }
-
-        cache.delete("weather:madrid")
 
         result = get_or_fetch_weather('Madrid')
 
@@ -123,14 +125,12 @@ class TestGetOrFetchWeather:
     @patch('weather.services.OpenWeatherService.fetch_current')
     def test_api_failure_fallback_to_db(self, mock_fetch):
         """Verifica fallback a DB cuando API falla."""
-        # Crea un registro previo
         old_weather = WeatherData.objects.create(
             city='Madrid',
             temperature=20.0,
             humidity=60.0,
-            wind_speed=10.0
+            wind_speed=10.0,
         )
-
         mock_fetch.side_effect = OpenWeatherUnavailable("API down")
 
         result = get_or_fetch_weather('Madrid')
@@ -142,8 +142,6 @@ class TestGetOrFetchWeather:
     def test_api_failure_no_db_fallback(self, mock_fetch):
         """Verifica que lanza excepción si API falla y no hay DB."""
         mock_fetch.side_effect = OpenWeatherUnavailable("API down")
-
-        cache.delete("weather:paris")
         WeatherData.objects.filter(city__iexact='Paris').delete()
 
         with pytest.raises(OpenWeatherUnavailable):
@@ -158,15 +156,12 @@ class TestGetOrFetchWeather:
             'temperature': 20.0,
             'humidity': 70.0,
             'wind_speed': 8.5,
-            'timestamp': '2026-04-24T10:00:00'
+            'timestamp': '2026-04-24T10:00:00',
         }
-
-        cache.delete("weather:barcelona")
 
         result1 = get_or_fetch_weather('Barcelona')
         mock_fetch.reset_mock()
         result2 = get_or_fetch_weather('Barcelona')
 
-        # Segunda llamada no debe hacer fetch
         mock_fetch.assert_not_called()
         assert result1.temperature == result2.temperature

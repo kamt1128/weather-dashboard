@@ -77,3 +77,47 @@ export async function clearOldCache(olderThan: Date): Promise<void> {
   await db.weather.where('timestamp').below(timestamp.toString()).delete()
   await db.dashboard.where('timestamp').below(timestamp).delete()
 }
+
+// Pending sync queue management for offline mode
+export type PendingAction =
+  | { action: 'fetch_dashboard'; payload: { city1: string; city2: string } }
+
+/**
+ * Enqueues a pending action to be synced when connection is restored.
+ * Avoids duplicates by checking for exact action+payload matches.
+ */
+export async function enqueuePendingSync(item: PendingAction): Promise<void> {
+  const existing = await db.pendingSync
+    .where('action').equals(item.action)
+    .toArray()
+  const duplicate = existing.find(
+    (e) => JSON.stringify(e.payload) === JSON.stringify(item.payload)
+  )
+  if (duplicate) {
+    console.info(`[offline-sync] Duplicado evitado: ${item.action}`, item.payload)
+    return
+  }
+  await db.pendingSync.add({ ...item, timestamp: Date.now() })
+  console.info(`[offline-sync] Acción encolada: ${item.action}`, item.payload)
+}
+
+/**
+ * Retrieves all pending sync actions ordered by timestamp.
+ */
+export async function getPendingSync(): Promise<Array<{ id: number } & PendingAction & { timestamp: number }>> {
+  return (await db.pendingSync.orderBy('timestamp').toArray()) as any
+}
+
+/**
+ * Removes a pending sync action by ID after successful sync.
+ */
+export async function removePendingSync(id: number): Promise<void> {
+  await db.pendingSync.delete(id)
+}
+
+/**
+ * Clears all pending sync actions (e.g., on manual user action or session reset).
+ */
+export async function clearPendingSync(): Promise<void> {
+  await db.pendingSync.clear()
+}

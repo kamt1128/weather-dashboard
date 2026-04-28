@@ -13,6 +13,8 @@ export class WebSocketManager {
   private maxReconnectDelay = 30000
   private pingInterval: ReturnType<typeof setTimeout> | null = null
   private pongTimeout: ReturnType<typeof setTimeout> | null = null
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private intentionalClose = false
   private listeners: Record<string, EventCallback[]> = {}
   private subscribedCities: string[] = []
 
@@ -24,6 +26,23 @@ export class WebSocketManager {
 
   connect(url?: string): Promise<void> {
     if (url) this.url = url
+
+    // Cancela cualquier reconexión pendiente
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+
+    // Si ya hay un socket activo o conectando, no abrir otro
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      return Promise.resolve()
+    }
+
+    this.intentionalClose = false
 
     return new Promise((resolve, reject) => {
       try {
@@ -52,16 +71,25 @@ export class WebSocketManager {
           console.log('WebSocket disconnected')
           this.stopPing()
           this.emit('close', null)
-          this.attemptReconnect()
+          // Solo intenta reconectar si el cierre NO fue intencional
+          if (!this.intentionalClose) {
+            this.attemptReconnect()
+          }
         }
 
         this.ws.onmessage = (event) => {
           try {
-            const message: WSMessage = JSON.parse(event.data)
+            const message = JSON.parse(event.data) as WSMessage & {
+              data?: Record<string, unknown>
+            }
+
             if (message.type === 'pong') {
               this.clearPongTimeout()
-            } else if (message.type === 'weather.update' && message.payload) {
-              this.emit('message', message.payload)
+            } else if (message.type === 'weather.update') {
+              const payload = message.payload ?? message.data
+              if (payload) {
+                this.emit('message', payload)
+              }
             } else if (message.type === 'error') {
               this.emit('error', message.message)
             }
@@ -76,17 +104,36 @@ export class WebSocketManager {
   }
 
   disconnect(): void {
+    this.intentionalClose = true
     this.stopPing()
+    // Cancela cualquier intento de reconexión pendiente
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     if (this.ws) {
-      this.ws.close()
+      // Quita los handlers para que onclose no dispare lógica residual
+      this.ws.onopen = null
+      this.ws.onerror = null
+      this.ws.onclose = null
+      this.ws.onmessage = null
+      if (
+        this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING
+      ) {
+        this.ws.close()
+      }
       this.ws = null
     }
   }
 
   subscribe(cities: string[]): void {
-    this.subscribedCities = cities
+    const normalizedCities = Array.from(
+      new Set(cities.map((city) => city.trim()).filter(Boolean))
+    )
+    this.subscribedCities = normalizedCities
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.send({ subscribe: cities })
+      this.send({ type: 'subscribe', cities: normalizedCities })
     }
   }
 
@@ -134,9 +181,12 @@ export class WebSocketManager {
     this.clearPongTimeout()
     this.pongTimeout = setTimeout(() => {
       console.warn('Pong timeout, reconnecting...')
-      this.disconnect()
-      this.connect()
-    }, 10000)
+      // Cierra el socket actual sin marcar como intencional
+      // para que onclose dispare reconexión con backoff
+      if (this.ws) {
+        this.ws.close()
+      }
+    }, 30000)
   }
 
   private clearPongTimeout(): void {
@@ -147,13 +197,20 @@ export class WebSocketManager {
   }
 
   private attemptReconnect(): void {
+    // Evita encolar múltiples timers de reconexión en paralelo
+    if (this.reconnectTimer) {
+      return
+    }
     const delay = Math.min(
       1000 * Math.pow(2, this.reconnectAttempts),
       this.maxReconnectDelay
     )
     this.reconnectAttempts++
     console.log(`Attempting to reconnect in ${delay}ms...`)
-    setTimeout(() => this.connect(), delay)
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null
+      this.connect()
+    }, delay)
   }
 }
 

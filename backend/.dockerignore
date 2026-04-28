@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env
+
+# Pytest / coverage / tox
+.pytest_cache/
+pytest-cache-files-*/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docs / project meta (no necesarios en la imagen)
+*.md
+IMPLEMENTATION_SUMMARY.md
+
+# Logs
+*.log
+logs/
+
+# Local DB / data
+*.sqlite3
+*.db
+db.sqlite3-journal
+
+# Static / media generados localmente
+staticfiles/
+media/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Tests (opcional: descomentar si no quieres incluirlos en la imagen)
+# tests/
+# **/tests/
