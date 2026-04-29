@@ -1,6 +1,6 @@
 # Weather Real-Time Dashboard
 
-[![CI Status](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/kennyalejandro/weather-dashboard/actions)
+[![CI Status](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/kamt1128/weather-dashboard/actions)
 [![License MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 [![Node 20](https://img.shields.io/badge/Node-20-green)](https://nodejs.org/)
@@ -21,19 +21,50 @@ Dashboard de clima en tiempo real que consume la API OpenWeather para múltiples
 
 ## Demo / Capturas
 
-_Pendiente: agregar capturas de pantalla del dashboard_
+### 1. Dashboard tab
+**Descripción**: Pantalla principal del dashboard recién abierto.
+
+![Dashborad view](docs/evidence/screenshots/dashboard-tab.png)
+
+### 2. Histórico tab
+**Descripción**: Pantalla que muestra una tabla con el histórico de comparaciones.
+
+![Historical view](docs/evidence/screenshots/historical-tab.png)
+
+### 3. Impresion de datos
+**Descripción**: Momento en que se le da click en la opción de imprimir.
+
+![Printing view](docs/evidence/screenshots/printing-view-action.png)
+
+### 4. Exportación de datos en archivo csv
+**Descripción**: Momento de descargar el CSV o archivo descargado.
+
+![Export csv view](docs/evidence/screenshots/export-csv-option.png)
 
 ## URLs Públicas
 
 | Recurso | URL |
 |---------|-----|
-| Frontend | `https://kennyalejandro.github.io/weather-dashboard/` |
-| Backend API | `https://weather-backend.onrender.com/api/v1/` |
-| Video Demo | `https://drive.google.com/...` |
+| Frontend | `https://kamt1128.github.io/weather-dashboard` |
+| Backend API | `https://weather-backend-grc8.onrender.com/api/v1` |
+| Videos Demo | `https://drive.google.com/drive/folders/1-33q303dy-FelaojFYT5YSLI9zTDUVph?usp=sharing` |
 
 ## Arquitectura
 
-Consulta `docs/architecture-diagram.md` para diagramas Mermaid detallados de componentes, secuencia y despliegue.
+## Diagrama de Componentes
+Visualiza cómo los componentes principales del sistema interactúan entre sí:
+
+![Export csv view](docs/evidence/diagrams/diagrama-componentes.png)
+
+## Diagrama de Secuencia
+Muestra el flujo de una solicitud de clima desde el usuario hasta la visualización:
+
+![Export csv view](docs/evidence/diagrams/digrama-secuencia.png)
+
+## Diagrama de Despliegue
+Muestra cómo el código se propaga desde el repositorio hasta los usuarios:
+
+![Export csv view](docs/evidence/diagrams/diagrama-despliegue.png)
 
 **Resumen:**
 - **Frontend:** GitHub Pages (SPA React + Vite)
@@ -124,7 +155,7 @@ weather-dashboard/
 
 1. **Clonar repositorio:**
    ```bash
-   git clone https://github.com/kennyalejandro/weather-dashboard.git
+   git clone https://github.com/kamt1128/weather-dashboard.git
    cd weather-dashboard
    ```
 
@@ -237,8 +268,8 @@ npm test
 ### Frontend (GitHub Pages)
 
 1. Confirmar que `VITE_API_URL` y `VITE_WS_URL` están en GitHub Secrets:
-   - `VITE_API_URL`: `https://weather-backend.onrender.com/api/v1`
-   - `VITE_WS_URL`: `wss://weather-backend.onrender.com/ws`
+   - `VITE_API_URL`: `https://weather-backend-grc8.onrender.com/api/v1`
+   - `VITE_WS_URL`: `wss://weather-backend-grc8.onrender.com/ws/weather`
 
 2. Push a `main` dispara workflow `.github/workflows/deploy-frontend.yml`
 3. Workflow automáticamente construye, agrega `.nojekyll` y `404.html`, y despliega a GitHub Pages
@@ -249,8 +280,8 @@ npm test
 2. Render aprovisiona: Postgres 16 (free), Redis (free) y web service Daphne (free).
 3. Configurar secretos manualmente en el dashboard del servicio `weather-backend`:
    - `OPENWEATHER_API_KEY`
-   - `CORS_ALLOWED_ORIGINS` (ej: `https://kennyalejandro.github.io`)
-4. Verificar health endpoint: `https://weather-backend.onrender.com/api/v1/health/`.
+   - `CORS_ALLOWED_ORIGINS` (ej: `https://kamt1128.github.io`)
+4. Verificar health endpoint: `https://weather-backend-grc8.onrender.com/api/v1/health/`.
 
 #### Nota sobre Celery en producción
 
@@ -266,20 +297,18 @@ Esta decisión queda documentada explícitamente para evitar inflar costos en un
 
 ## Decisiones Técnicas
 
-Consulta `docs/DECISIONS.md` para ADRs (Architecture Decision Records) completos:
-
-- ADR-1: Django 5 + DRF por escalabilidad y ecosystem maduro
-- ADR-2: React 18 + Vite para bundling rápido y dev experience
-- ADR-3: WebSocket + Channels para actualizaciones en tiempo real
-- ADR-4: Celery + Beat para tareas asincrónicas y scheduling
-- ADR-5: Redis para cache y message broker
-- ADR-6: PostgreSQL para persistencia confiable
-- ADR-7: GitHub Pages para frontend (estático SPA)
-- ADR-8: Render.com free tier para MVP backend
-- ADR-9: TypeScript en frontend por type safety
-- ADR-10: Dexie (IndexedDB) para offline-first capability
-- ADR-11: Recharts para visualización interactiva
-- ADR-12: Docker Compose para local development consistency
+- Django 5 + DRF por escalabilidad y ecosystem maduro
+- React 18 + Vite para bundling rápido y dev experience
+- WebSocket + Channels para actualizaciones en tiempo real
+- Celery + Beat para tareas asincrónicas y scheduling
+- Redis para cache y message broker
+- PostgreSQL para persistencia confiable
+- GitHub Pages para frontend (estático SPA)
+- Render.com free tier para MVP backend
+- TypeScript en frontend por type safety
+- Dexie (IndexedDB) para offline-first capability
+- Recharts para visualización interactiva
+- Docker Compose para local development consistency
 
 ## Bonus Implementados
 
@@ -294,24 +323,13 @@ Consulta `docs/DECISIONS.md` para ADRs (Architecture Decision Records) completos
 - Non-root user en Docker
 - WhiteNoise para static files en prod
 
-## Roadmap Futuro
-
-- Autenticación y per-user favorites
-- Soporte de más ciudades (geocoding)
-- Alertas por umbral (temp max/min)
-- Predicciones 5-14 días
-- Métricas Prometheus + Grafana
-- Notificaciones push
-- Dark mode
-- Multi-idioma (i18n)
-
 ## Licencia
 
-MIT License - Kenny Alejandro Morelo (kmorelo@qpalliance.co)
+MIT License - Kenny Alejandro Morelo ( kamt1128@gmail.com)
 
 ## Autor
 
 **Kenny Alejandro Morelo**
-GitHub: [@kennyalejandro](https://github.com/kennyalejandro)
-Email: kmorelo@qpalliance.co
+GitHub: [@kamt1128](https://github.com/kamt1128)
+Email: kamt1128@gmail.com
 Proyecto: Weather Real-Time Dashboard (Enersinc Full Stack Advanced Test)
